@@ -1,6 +1,6 @@
 import pool from "../db/connection.js";
 import { decoratorCategory, decoratorCategoryList } from "../decorators/category.decorator.js";
-import { validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
+import { validateDestroy, validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
 import { uuidv7 } from "uuidv7";
 
 export const store = async (req, res) => {
@@ -73,5 +73,21 @@ export const update = async(req, res) => {
         return res.status(200).json( category );
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
+
+export const destroy = async(req,res) => {
+    try {
+        const { id } = req.params;
+        const { isValid, message, errors } = validateDestroy(id);
+        if(!isValid) return res.status(422).json({ message, errors });
+        const [rows] = await pool.execute("SELECT * FROM categories WHERE id = ?", [id]);
+        if(!rows) return res.status(404).json({ message: "Categoría no encontrada" });
+        await pool.execute("DELETE FROM categories WHERE id = ?", [id]);
+        const category = decoratorCategory(rows[0]);
+        return res.status(200).json({ message: "Categoría elimianada exitosamente", category});
+        
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."}); 
     }
 }
