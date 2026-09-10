@@ -33,3 +33,16 @@ export const validateUpdate = (data = {}) => {
 
     return { isValid, message: isValid ? "" : buildErrorMessage(errors), errors };
 }
+
+export const validateDestroy = (id) => {
+    const errors = {};
+    if (!id || typeof id !== "string" || id.trim() === "") {
+        errors.id = ["El id de la categoría es obligatorio"];
+    } else if (id.trim().length !== 36) {
+        errors.id = ["El id debe ser un UUID válido de 36 caracteres"];
+    }
+
+    const isValid = Object.keys(errors).length === 0;
+
+    return { isValid, message: isValid ? "" : buildErrorMessage(errors), errors };
+}
