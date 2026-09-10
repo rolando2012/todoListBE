@@ -1,6 +1,6 @@
 import pool from "../db/connection.js";
 import { decoratorCategory, decoratorCategoryList } from "../decorators/category.decorator.js";
-import { validateStore } from "../utils/validations/categories.validator.js";
+import { validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
 import { uuidv7 } from "uuidv7";
 
 export const store = async (req, res) => {
@@ -45,6 +45,32 @@ export const show = async(req, res) => {
         if(rows.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
         const category = decoratorCategory(rows[0]);
         return res.status(200).json(category);
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
+
+export const update = async(req, res) => {
+    try {
+        const data = { id: req.params.id, ...req.body};
+
+        const {isValid, message, errors } = validateUpdate(data || {});
+        if(!isValid){
+            return res.status(422).json({ message, errors });
+        }
+
+        const cleanName = data.name.trim();
+
+        const [result] = await pool.execute("UPDATE categories SET name = ? WHERE id = ?", 
+            [cleanName, data.id]);
+
+        if(result.affectedRows === 0) return res.status(404).json({ message: "Categoria no encontrada" });
+        
+        const [rows] = await pool.execute("SELECT id, name, user_id, created_at, updated_at FROM categories WHERE id = ?",
+            [data.id]);
+
+        const category = decoratorCategory(rows[0]);
+        return res.status(200).json( category );
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
