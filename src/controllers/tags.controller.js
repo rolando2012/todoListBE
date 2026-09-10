@@ -1,5 +1,5 @@
 import pool from "../db/connection.js";
-import { decoratorTag } from "../decorators/tag.decorator.js";
+import { decoratorTag, decoratorTagList } from "../decorators/tag.decorator.js";
 import { validateStore } from "../utils/validations/tags.validator.js";
 import { uuidv7 } from "uuidv7";
 
@@ -21,7 +21,26 @@ export const store = async(req, res) => {
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
-    
+}
 
+export const index = async(req,res) =>{
+    try {
+        const [rows] = await pool.execute("SELECT * FROM tags ORDER BY id");
+        const data = decoratorTagList(rows);
+        return res.status(200).json({ data });
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
 
+export const show = async(req,res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await pool.execute("SELECT * FROM tags WHERE id = ?", [id]);
+        if(rows.length === 0 ) return res.status(404).json({ message: "Etiqueta no encontrada"});
+        const tag = decoratorTag(rows[0]);
+        return res.status(200).json( tag );
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
 }
