@@ -1,8 +1,10 @@
 import express from "express";
-import { store } from "../controllers/tags.controller.js";
+import { index, show, store } from "../controllers/tags.controller.js";
 
 const router = express.Router();
 
 router.post("/", store);
+router.get("/", index);
+router.get("/:id", show);
 
 export default router;
