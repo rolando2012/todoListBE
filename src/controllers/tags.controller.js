@@ -1,6 +1,6 @@
 import pool from "../db/connection.js";
 import { decoratorTag, decoratorTagList } from "../decorators/tag.decorator.js";
-import { validateStore } from "../utils/validations/tags.validator.js";
+import { validateStore, validateUpdate } from "../utils/validations/tags.validator.js";
 import { uuidv7 } from "uuidv7";
 
 export const store = async(req, res) => {
@@ -39,6 +39,28 @@ export const show = async(req,res) => {
         const [rows] = await pool.execute("SELECT * FROM tags WHERE id = ?", [id]);
         if(rows.length === 0 ) return res.status(404).json({ message: "Etiqueta no encontrada"});
         const tag = decoratorTag(rows[0]);
+        return res.status(200).json( tag );
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
+
+export const update = async(req, res) => {
+    try {
+        const data = {id: req.params.id, ...req.body}
+        const { isValid, message , errors } = validateUpdate(data);
+        
+        if(!isValid) return res.status(422).json({ message, errors });
+        
+        const [ result ] = await pool.execute("UPDATE tags SET name = ? WHERE id = ?",
+            [data.name.trim(), data.id]
+        );
+
+        if(result.affectedRows === 0) return res.status(404).json({ message: "Etiqueta no encontrada"});
+
+        const [ rows ] = await pool.execute("SELECT * FROM tags WHERE id = ?", [data.id]);
+        const tag = decoratorTag(rows[0]);
+        
         return res.status(200).json( tag );
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
