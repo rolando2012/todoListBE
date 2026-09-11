@@ -66,3 +66,17 @@ export const update = async(req, res) => {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
 }
+
+export const destroy = async(req, res) => {
+    try {
+        const { id  } = req.params;
+        const [rows] = await pool.execute("SELECT * FROM tags WHERE id = ?", [id]);
+        if(rows.length === 0 ) return res.status(404).json({ message: "Etiqueta no encontrada"});
+
+        await pool.execute("DELETE FROM tags WHERE id = ?", [id]);
+        const tag = decoratorTag(rows[0]);
+        return res.status(200).json({ message: "Etiqueta eliminada exitosamente", tag });
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
