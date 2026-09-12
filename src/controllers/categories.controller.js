@@ -29,7 +29,10 @@ export const store = async (req, res) => {
 
 export const index = async(req, res) => {
     try {
-        const [categories] = await pool.execute("SELECT * FROM categories");
+        const [categories] = await pool.execute(`SELECT categories.*, 
+            COUNT(tasks.id) AS tasks_count
+            FROM categories LEFT JOIN tasks ON categories.id = tasks.category_id
+            GROUP BY categories.id ORDER BY categories.id`);
         const data = decoratorCategoryList(categories);
         return res.status(200).json({ data });
     } catch (error) {
@@ -41,7 +44,9 @@ export const show = async(req, res) => {
     try {
         const {id} = req.params;
 
-        const [rows] = await pool.execute("SELECT * FROM categories WHERE id=?",[id]);
+        const [rows] = await pool.execute(`SELECT categories.*, COUNT(tasks.id) AS tasks_count
+            FROM categories LEFT JOIN tasks ON categories.id = tasks.category_id 
+            WHERE categories.id=? GROUP BY categories.id `,[id]);
         if(rows.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
         const category = decoratorCategory(rows[0]);
         return res.status(200).json(category);
