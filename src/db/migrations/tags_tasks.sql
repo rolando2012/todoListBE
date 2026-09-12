@@ -1,6 +1,7 @@
 CREATE TABLE tags_tasks(
     tag_id VARCHAR(36) NOT NULL,
     task_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     PRIMARY KEY (tag_id, task_id),
     CONSTRAINT fk_tt_tag
