@@ -12,7 +12,7 @@ export const validateStore = (data = {}) => {
 
     if(!description || typeof description !== "string" || description.trim() === ""){
         errors.description = ["La descripción es obligatorio"];
-    }else if(description.trim().length >50){
+    }else if(description.trim().length > 500){
         errors.description = ["La descripción no debe exceder los 50 caracteres"];
     }
 
@@ -48,4 +48,20 @@ export const validateStore = (data = {}) => {
     const isValid = Object.keys(errors).length === 0;
     
     return { isValid, message: isValid? "": buildErrorMessage(errors),  errors };
+}
+
+export const validateUpdate = (data = {}) => {
+    const baseResult = validateStore(data);
+    const errors = {...baseResult.errors};
+    const { id } = data;
+
+    if(!id || typeof id !== "string" || id.trim() === ""){
+        errors.id = ["El id de la tarea es obligatorio"];
+    }else if(id.trim().length !== 36){
+        errors.id = ["El id debe ser un UUID válido de 36 caracteres"];
+    }
+
+    const isValid = Object.keys(errors).length === 0;
+
+    return { isValid, message: isValid? "": buildErrorMessage(errors), errors };
 }
