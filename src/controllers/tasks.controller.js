@@ -136,3 +136,18 @@ export const update = async(req, res) => {
         connection.release();
     }
 }
+
+export const destroy = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.execute(`SELECT * FROM tasks WHERE id = ?`,[id]);
+        if(result.length === 0) return res.status(404).json({ message: "Tarea no encontrada" });
+        
+        await pool.execute(`DELETE FROM tasks WHERE id=?`, [id]);
+        const data = decoradorTask(result[0]);
+        
+        return res.status(200).json({ message: "Tarea eliminada exitosamente", data })
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
