@@ -1,7 +1,7 @@
 import { uuidv7 } from "uuidv7";
 import pool from "../db/connection.js";
 import { validateStore } from "../utils/validations/tasks.validator.js";
-import { decoradorTask, decoradorTaskList } from "../decorators/tasks.decorator.js";
+import { decoradorTask, decoradorTaskList, decoradorTaskSelect } from "../decorators/tasks.decorator.js";
 
 export const store = async(req, res) => {
     const connection = await pool.getConnection();
@@ -44,6 +44,7 @@ export const index = async(req, res) => {
             SELECT tasks.*, categories.name as category_name 
             FROM tasks 
             LEFT JOIN categories ON tasks.category_id = categories.id 
+            ORDER BY tasks.id
             `);
         if(result.length === 0) return res.status(200).json({ data:[] });
 
@@ -65,7 +66,25 @@ export const index = async(req, res) => {
 
         return res.status(200).json({ data });
     } catch (error) {
-        console.log(error);
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
 }
+
+export const show = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.execute(`SELECT tasks.*, categories.name as category_name
+                            FROM tasks LEFT JOIN categories ON tasks.category_id = categories.id 
+                            WHERE tasks.id = ?`,[id]);
+        if(result.length === 0) return res.status(404).json({ message: "Tarea no encontrada" });
+        
+        const [tags] = await pool.execute(`SELECT tags.id, tags.name
+                            FROM tags_tasks INNER JOIN tags ON tags_tasks.tag_id = tags.id
+                            WHERE tags_tasks.task_id = ?`, [id]);
+        
+        const data = decoradorTaskSelect({...result[0], tags});
+        return res.status(200).json( data ); 
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+} 

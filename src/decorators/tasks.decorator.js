@@ -1,27 +1,27 @@
-export const decoradorTask = (data) => {
+export const decoradorTask = (task) => {
     return {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        state: data.state,
-        category_id: data.category_id || null,
-        tags: data.tags || [],
-        user_id: data.user_id
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        state: task.state,
+        category_id: task.category_id || null,
+        tags: task.tags || [],
+        user_id: task.user_id
     };
 }
 
-export const decoradorTaskSelect = (data) => {
+export const decoradorTaskSelect = (task) => {
     return{
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        category_id: data.category_id,
-        category: data.category_name 
-            ? { id: data.category_id, name: data.category_name }
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        category_id: task.category_id,
+        category: task.category_name 
+            ? { id: task.category_id, name: task.category_name }
             : null,
-        tags: data.tags || [],
-        user_id: data.user_id
+        tags: task.tags || [],
+        user_id: task.user_id
     };
 }
 
