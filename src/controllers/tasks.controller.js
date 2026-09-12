@@ -1,7 +1,7 @@
 import { uuidv7 } from "uuidv7";
 import pool from "../db/connection.js";
 import { validateStore } from "../utils/validations/tasks.validator.js";
-import { decoradorTask } from "../decorators/tasks.decorator.js";
+import { decoradorTask, decoradorTaskList } from "../decorators/tasks.decorator.js";
 
 export const store = async(req, res) => {
     const connection = await pool.getConnection();
@@ -34,6 +34,38 @@ export const store = async(req, res) => {
 
     } catch (error) {
         await connection.rollback();
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}
+
+export const index = async(req, res) => {
+    try {
+        const [result] = await pool.execute(`
+            SELECT tasks.*, categories.name as category_name 
+            FROM tasks 
+            LEFT JOIN categories ON tasks.category_id = categories.id 
+            `);
+        if(result.length === 0) return res.status(200).json({ data:[] });
+
+        const tasksIds = result.map(t=>t.id);
+        const [tags] = await pool.query(`
+            SELECT tags_tasks.tag_id, tags_tasks.task_id, tags.name 
+            FROM tags_tasks INNER JOIN tags ON tags_tasks.tag_id = tags.id
+            WHERE tags_tasks.task_id IN (?)
+            `, [tasksIds]);
+        const mapTasks = new Map(result.map(task => [task.id, {...task, tags: []}]));
+
+        tags.forEach(tag => {
+            const task = mapTasks.get(tag.task_id);
+            if(task) task.tags.push({id: tag.tag_id, name: tag.name});
+        });
+
+        const tasks = Array.from(mapTasks.values());
+        const data = decoradorTaskList(tasks);
+
+        return res.status(200).json({ data });
+    } catch (error) {
+        console.log(error);
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
 }
