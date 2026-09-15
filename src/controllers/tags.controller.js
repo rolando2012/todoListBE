@@ -8,15 +8,16 @@ export const store = async(req, res) => {
         const { isValid, message, errors } = validateStore(req.body || {});
         if(!isValid) return res.status(422).json({ message, errors });
         
-        const { name, user_id } = req.body;
+        const { name } = req.body;
         const id = uuidv7();
         const cleanName = name.trim();
+        const user_id = process.env.TEST_USER_ID;
 
         await pool.execute("INSERT INTO tags (id, name, user_id) VALUES (?,?,?)",
             [id, cleanName, user_id]
         );
-        const tag = decoratorTag({id, name: cleanName, user_id, 
-            created_at: new Date().toISOString()});
+
+        const tag = decoratorTag({id, name: cleanName, user_id });
         return res.status(201).json({ tag })
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
@@ -25,8 +26,8 @@ export const store = async(req, res) => {
 
 export const index = async(req,res) =>{
     try {
-        const [rows] = await pool.execute("SELECT * FROM tags ORDER BY id");
-        const data = decoratorTagList(rows);
+        const [tags] = await pool.execute("SELECT * FROM tags ORDER BY id");
+        const data = decoratorTagList(tags);
         return res.status(200).json({ data });
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
