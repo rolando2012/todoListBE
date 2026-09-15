@@ -11,15 +11,15 @@ export const store = async (req, res) => {
         }
 
         const id = uuidv7();
-        const {name, user_id} = req.body;
+        const {name} = req.body;
         const cleanName = name.trim();
+        const user_id = process.env.TEST_USER_ID;
 
         await pool.execute("INSERT INTO categories (id, name, user_id) VALUES (?,?,?)",
             [id,cleanName,user_id]
         );
 
-        const category = decoratorCategory({id,name:cleanName,
-            user_id, created_at: new Date().toISOString()});
+        const category = decoratorCategory({id, name:cleanName, user_id});
 
         return res.status(201).json({ category });
     } catch (error) {
@@ -29,8 +29,8 @@ export const store = async (req, res) => {
 
 export const index = async(req, res) => {
     try {
-        const [listCategories] = await pool.execute("SELECT * FROM categories");
-        const data = decoratorCategoryList(listCategories);
+        const [categories] = await pool.execute("SELECT * FROM categories");
+        const data = decoratorCategoryList(categories);
         return res.status(200).json({ data });
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
@@ -66,7 +66,7 @@ export const update = async(req, res) => {
 
         if(result.affectedRows === 0) return res.status(404).json({ message: "Categoria no encontrada" });
         
-        const [rows] = await pool.execute("SELECT id, name, user_id, created_at, updated_at FROM categories WHERE id = ?",
+        const [rows] = await pool.execute("SELECT id, name, user_id FROM categories WHERE id = ?",
             [data.id]);
 
         const category = decoratorCategory(rows[0]);
