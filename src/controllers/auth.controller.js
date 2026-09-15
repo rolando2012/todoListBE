@@ -9,11 +9,11 @@ export const register = async (req, res) => {
     try {
         const { isValid, message, errors } = validateStore(req.body || {});
 
-        if(!isValid){
-            return res.status(422).json({ message, errors });
-        }
+        if(!isValid)return res.status(422).json({ message, errors });
 
         const {name, email, password} = req.body;
+        const [result] = await pool.execute("SELECT email FROM users WHERE email = ?", [email]);
+        if(result.length > 0) return res.status(422).json({ message: "El correo electrónico ya se encuentra registrado."});
 
         const idTexto = uuidv7();
         const passwordHash = await bcrypt.hash(password, 10);
