@@ -51,3 +51,12 @@ export const login = async (req, res) => {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
 }
+
+
+export const logout = async(req, res) => {
+    try {
+        return res.status(200).json({ message: "Sesión cerrada exitosamente"});
+    } catch (error) {
+        return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
+    }
+}

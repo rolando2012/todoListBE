@@ -2,6 +2,7 @@ import pool from "../db/connection.js";
 import { decoratorCategory, decoratorCategoryList } from "../decorators/category.decorator.js";
 import { validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
 import { uuidv7 } from "uuidv7";
+import { buildLaravelPaginator } from "../utils/format/paginate.js";
 
 export const store = async (req, res) => {
     try {
@@ -33,12 +34,23 @@ export const store = async (req, res) => {
 export const index = async(req, res) => {
     try {
         const user_id = req.user.id;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const perPage = Math.max(1, parseInt(req.query.per_page, 10) || 15);
+        const offset = (page - 1) * perPage;
+        const [[{ total }]] = await pool.execute("SELECT COUNT(*) AS total FROM categories WHERE user_id = ?",[user_id]);
         const [categories] = await pool.execute(`SELECT categories.*, 
             (SELECT COUNT(*) FROM tasks WHERE tasks.category_id = categories.id AND tasks.user_id = ?) AS tasks_count
-            FROM categories WHERE categories.user_id = ?`, [user_id, user_id]
-        );
-        const data = decoratorCategoryList(categories);
-        return res.status(200).json({ data });
+            FROM categories WHERE categories.user_id = ? ORDER BY categories.id 
+            LIMIT ? OFFSET ?`, [user_id, user_id, String(perPage), String(offset)]);
+        const decoratedData = decoratorCategoryList(categories)
+        const response = buildLaravelPaginator({
+            data: decoratedData,
+            total,
+            page,
+            perPage,
+            req
+        });
+        return res.status(200).json(response);
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
