@@ -2,7 +2,7 @@ import { buildErrorMessage } from "../format/formatErrors.js";
 
 export const validateStore = (data = {}) => {
     const errors = {};
-    const { title, description, category_id, state, tags, user_id } = data;
+    const { title, description, category_id, state, tags } = data;
 
     if(!title || typeof title !== "string" || title.trim() === ""){
         errors.title = ["El titulo es obligatorio"];
@@ -39,12 +39,6 @@ export const validateStore = (data = {}) => {
         }
     }
 
-    if(!user_id || typeof user_id !== "string" || user_id.trim() === ""){
-        errors.user_id = ["El user_id es obligatorio"];
-    }else if(user_id.trim().length !== 36){
-        errors.user_id = ["El id debe ser un UUID válido de 36 caracteres"];
-    }
-    
     const isValid = Object.keys(errors).length === 0;
     
     return { isValid, message: isValid? "": buildErrorMessage(errors),  errors };
