@@ -15,6 +15,9 @@ export const store = async (req, res) => {
         const cleanName = name.trim();
         const user_id = req.user.id;
 
+        const [existing] = await pool.execute("SELECT id FROM categories WHERE name = ? AND user_id = ?", [cleanName, user_id]);
+        if (existing.length > 0) return res.status(422).json({message: "Ya tienes una categoría creada con este nombre." });
+        
         await pool.execute("INSERT INTO categories (id, name, user_id) VALUES (?,?,?)",
             [id,cleanName,user_id]
         );
@@ -71,6 +74,10 @@ export const update = async(req, res) => {
         }
 
         const cleanName = data.name.trim();
+        const [existing] = await pool.execute("SELECT id FROM categories WHERE name = ? AND user_id = ? AND id != ?", [cleanName, user_id, data.id]);
+
+        if (existing.length > 0) return res.status(422).json({ message: "Ya existe otra categoría con este nombre." });
+
         const [result] = await pool.execute("UPDATE categories SET name = ? WHERE id = ? AND user_id = ?", 
             [cleanName, data.id, user_id]);
 
@@ -93,6 +100,11 @@ export const destroy = async(req,res) => {
 
         const [rows] = await pool.execute("SELECT * FROM categories WHERE id = ? AND user_id = ?", [id, user_id]);
         if(rows.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
+
+        const [tasks] = await pool.execute("SELECT COUNT(*) AS count FROM tasks WHERE category_id = ? AND user_id = ?", [id, user_id]);
+
+        if (tasks[0].count > 0) return res.status(422).json({ 
+                message: "No se puede eliminar la categoría porque tiene tareas asociadas. Reasigna o elimina las tareas primero." });
 
         await pool.execute("DELETE FROM categories WHERE id = ? AND user_id = ?", [id, user_id]);
         const category = decoratorCategory(rows[0]);

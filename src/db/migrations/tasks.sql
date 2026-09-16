@@ -16,3 +16,10 @@ CREATE TABLE tasks(
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE ON UPDATE CASCADE
 )
+
+ALTER TABLE tasks DROP FOREIGN KEY fk_tasks_categories;
+
+ALTER TABLE tasks 
+ADD CONSTRAINT fk_tasks_categories 
+    FOREIGN KEY (category_id) REFERENCES categories(id) 
+    ON DELETE RESTRICT ON UPDATE CASCADE;
