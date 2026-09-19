@@ -6,7 +6,7 @@ export const decoradorTask = (task) => {
         id: task.id,
         title: task.title,
         description: task.description,
-        status: task.status,
+        state: task.state,
         category_id: task.category_id,
         category: task.category  
             ? decoratorCategory(task.category)

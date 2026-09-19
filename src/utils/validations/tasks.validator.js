@@ -22,8 +22,6 @@ export const validateStore = (data = {}) => {
 
     if(state === undefined || state === null){
         errors.state = ["El estado es obligatorio"];
-    }else if(typeof state !== "boolean"){
-        errors.state = ["El estado debe ser booleano"];
     }
 
     if (tags !== undefined && tags !== null) {
