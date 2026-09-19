@@ -3,6 +3,7 @@ import morgan from "morgan";
 import UsersRoutes from "./routes/users.routes.js";
 import CategoriesRoutes from "./routes/categories.routes.js"
 import TagsRoutes from "./routes/tags.routes.js"
+import TasksRouter from "./routes/tasks.routes.js";
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get('/', (req, res) => res.send("Servidor corriendo"));
 app.use("/api/users", UsersRoutes);
 app.use("/api/categories", CategoriesRoutes);
 app.use("/api/tags", TagsRoutes);
+app.use("/api/tasks", TasksRouter);
 
 app.listen(PORT, () => {
     console.log(`Server corriendo  en http://localhost:${PORT}`);

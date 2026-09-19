@@ -1,0 +1,18 @@
+CREATE TABLE tasks(
+    id VARCHAR(36) PRIMARY KEY,
+    title VARCHAR(50) NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    state BOOLEAN DEFAULT 0,
+    category_id VARCHAR(36) NULL,
+    user_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_tasks_categories
+        FOREIGN KEY (category_id) REFERENCES categories(id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    CONSTRAINT fk_tasks_users
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+)
