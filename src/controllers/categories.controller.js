@@ -1,6 +1,6 @@
 import pool from "../db/connection.js";
 import { decoratorCategory, decoratorCategoryList } from "../decorators/category.decorator.js";
-import { validateDestroy, validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
+import { validateStore, validateUpdate } from "../utils/validations/categories.validator.js";
 import { uuidv7 } from "uuidv7";
 
 export const store = async (req, res) => {
@@ -13,7 +13,7 @@ export const store = async (req, res) => {
         const id = uuidv7();
         const {name} = req.body;
         const cleanName = name.trim();
-        const user_id = process.env.TEST_USER_ID;
+        const user_id = req.user.id;
 
         await pool.execute("INSERT INTO categories (id, name, user_id) VALUES (?,?,?)",
             [id,cleanName,user_id]
@@ -29,10 +29,11 @@ export const store = async (req, res) => {
 
 export const index = async(req, res) => {
     try {
+        const user_id = req.user.id;
         const [categories] = await pool.execute(`SELECT categories.*, 
-            COUNT(tasks.id) AS tasks_count
-            FROM categories LEFT JOIN tasks ON categories.id = tasks.category_id
-            GROUP BY categories.id ORDER BY categories.id`);
+            (SELECT COUNT(*) FROM tasks WHERE tasks.category_id = categories.id AND tasks.user_id = ?) AS tasks_count
+            FROM categories WHERE categories.user_id = ?`, [user_id, user_id]
+        );
         const data = decoratorCategoryList(categories);
         return res.status(200).json({ data });
     } catch (error) {
@@ -43,12 +44,16 @@ export const index = async(req, res) => {
 export const show = async(req, res) => {
     try {
         const {id} = req.params;
+        const user_id = req.user.id;
 
-        const [rows] = await pool.execute(`SELECT categories.*, COUNT(tasks.id) AS tasks_count
-            FROM categories LEFT JOIN tasks ON categories.id = tasks.category_id 
-            WHERE categories.id=? GROUP BY categories.id `,[id]);
-        if(rows.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
-        const category = decoratorCategory(rows[0]);
+        const [categories] = await pool.execute(`SELECT categories.*, 
+            (SELECT COUNT(*) FROM tasks WHERE tasks.category_id = categories.id AND tasks.user_id = ?) AS tasks_count
+            FROM categories 
+            WHERE categories.id = ? AND categories.user_id = ?`, [user_id, id, user_id]
+        );
+        if(categories.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
+
+        const category = decoratorCategory(categories[0]);
         return res.status(200).json(category);
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
@@ -58,6 +63,7 @@ export const show = async(req, res) => {
 export const update = async(req, res) => {
     try {
         const data = { id: req.params.id, ...req.body};
+        const user_id = req.user.id;
 
         const {isValid, message, errors } = validateUpdate(data || {});
         if(!isValid){
@@ -65,14 +71,13 @@ export const update = async(req, res) => {
         }
 
         const cleanName = data.name.trim();
-
-        const [result] = await pool.execute("UPDATE categories SET name = ? WHERE id = ?", 
-            [cleanName, data.id]);
+        const [result] = await pool.execute("UPDATE categories SET name = ? WHERE id = ? AND user_id = ?", 
+            [cleanName, data.id, user_id]);
 
         if(result.affectedRows === 0) return res.status(404).json({ message: "Categoria no encontrada" });
         
-        const [rows] = await pool.execute("SELECT id, name, user_id FROM categories WHERE id = ?",
-            [data.id]);
+        const [rows] = await pool.execute("SELECT * FROM categories WHERE id = ? AND user_id = ?",
+            [data.id, user_id]);
 
         const category = decoratorCategory(rows[0]);
         return res.status(200).json( category );
@@ -84,11 +89,12 @@ export const update = async(req, res) => {
 export const destroy = async(req,res) => {
     try {
         const { id } = req.params;
-        const { isValid, message, errors } = validateDestroy(id);
-        if(!isValid) return res.status(422).json({ message, errors });
-        const [rows] = await pool.execute("SELECT * FROM categories WHERE id = ?", [id]);
-        if(!rows) return res.status(404).json({ message: "Categoría no encontrada" });
-        await pool.execute("DELETE FROM categories WHERE id = ?", [id]);
+        const user_id = req.user.id;
+
+        const [rows] = await pool.execute("SELECT * FROM categories WHERE id = ? AND user_id = ?", [id, user_id]);
+        if(rows.length === 0) return res.status(404).json({ message: "Categoría no encontrada" });
+
+        await pool.execute("DELETE FROM categories WHERE id = ? AND user_id = ?", [id, user_id]);
         const category = decoratorCategory(rows[0]);
         return res.status(200).json({ message: "Categoría elimianada exitosamente", category});
         
