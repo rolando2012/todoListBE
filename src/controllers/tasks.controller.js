@@ -2,6 +2,7 @@ import { uuidv7 } from "uuidv7";
 import pool from "../db/connection.js";
 import { validateStore, validateUpdate } from "../utils/validations/tasks.validator.js";
 import { decoradorTask, decoradorTaskList } from "../decorators/tasks.decorator.js";
+import { buildLaravelPaginator } from "../utils/format/paginate.js";
 
 export const store = async(req, res) => {
     const { isValid, message, errors } = validateStore(req.body || {});
@@ -64,8 +65,14 @@ export const store = async(req, res) => {
 export const index = async(req, res) => {
     try {
         const user_id = req.user.id;
-        const [tasks] = await pool.execute(`SELECT * FROM tasks WHERE user_id = ? ORDER BY id`, [user_id]);
-        if(tasks.length === 0) return res.status(200).json({ data:[] });
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const perPage = Math.max(1, parseInt(req.query.perPage, 10) || 15);
+        const offset = (page - 1) * perPage;
+        const [[{ total }]] = await pool.execute("SELECT COUNT(*) AS total FROM tasks WHERE user_id = ?",[user_id]);
+        if(total === 0) return res.status(200).json({ data:[], total: 0, page, perPage, req });
+        
+        const [tasks] = await pool.execute(`SELECT * FROM tasks WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, 
+            [user_id, String(perPage), String(offset)]);
 
         const categoriesIds = [...new Set(tasks.map(t => t.category_id).filter(Boolean))];
         let mapCategories = new Map();
@@ -100,9 +107,17 @@ export const index = async(req, res) => {
             tags: mapTags.get(task.id) ?? [] }));
 
 
-        const data = decoradorTaskList(mapTasks);
-        return res.status(200).json({ data });
+        const decoratedData = decoradorTaskList(mapTasks);
+        const response = buildLaravelPaginator({
+            data: decoratedData,
+            total,
+            page,
+            perPage,
+            req
+        });
+        return res.status(200).json(response);
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }
 }

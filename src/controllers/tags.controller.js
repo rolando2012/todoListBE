@@ -2,6 +2,7 @@ import pool from "../db/connection.js";
 import { decoratorTag, decoratorTagList } from "../decorators/tag.decorator.js";
 import { validateStore, validateUpdate } from "../utils/validations/tags.validator.js";
 import { uuidv7 } from "uuidv7";
+import { buildLaravelPaginator } from "../utils/format/paginate.js";
 
 export const store = async(req, res) => {
     try {
@@ -27,12 +28,23 @@ export const store = async(req, res) => {
 export const index = async(req,res) =>{
     try {
         const user_id = req.user.id;
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const perPage = Math.max(1, parseInt(req.query.per_page, 10) || 15);
+        const offset = (page - 1) * perPage;
+        const [[{ total }]] = await pool.execute("SELECT COUNT(*) AS total FROM tags WHERE user_id = ?",[user_id]);
         const [tags] = await pool.execute(`SELECT tags.*, 
             (SELECT COUNT(*) FROM tags_tasks WHERE tags_tasks.tag_id = tags.id) AS tasks_count
-            FROM tags WHERE tags.user_id = ?`, [user_id]);
-
-        const data = decoratorTagList(tags);
-        return res.status(200).json({ data });
+            FROM tags WHERE tags.user_id = ? ORDER BY tags.id 
+            LIMIT ? OFFSET ?`, [user_id, String(perPage), String(offset)]);
+        const decoratedData = decoratorTagList(tags);
+        const response = buildLaravelPaginator({
+                    data: decoratedData,
+                    total,
+                    page,
+                    perPage,
+                    req
+                });
+        return res.status(200).json(response);
     } catch (error) {
         return res.status(500).json({ message: "Ocurrió un error inesperado en el servidor. Inténtelo más tarde."});
     }

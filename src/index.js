@@ -4,11 +4,13 @@ import authRoutes from "./routes/auth.routes.js";
 import CategoriesRoutes from "./routes/categories.routes.js"
 import TagsRoutes from "./routes/tags.routes.js"
 import TasksRouter from "./routes/tasks.routes.js";
+import cors from "cors";
 
 const app = express();
 
 const PORT = process.env.PORT || 4000;
 
+app.use(cors())
 app.use(express.json())
 app.use(morgan("dev"));
 
